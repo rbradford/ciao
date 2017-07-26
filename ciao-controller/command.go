@@ -194,9 +194,9 @@ func (c *controller) startWorkload(w types.WorkloadRequest) ([]*types.Instance, 
 
 	var newInstances []*types.Instance
 
-	for i := 0; i < w.Instances && e == nil; i++ {
-		startTime := time.Now()
-
+	errCh := make(chan error)
+	instanceCh := make(chan *instance)
+	for i := 0; i < w.Instances; i++ {
 		name := w.Name
 		if name != "" {
 			if w.Instances > 1 {
@@ -204,43 +204,58 @@ func (c *controller) startWorkload(w types.WorkloadRequest) ([]*types.Instance, 
 			}
 		}
 
-		instance, err := newInstance(c, w.TenantID, &wl, w.Volumes, name)
-		if err != nil {
-			e = errors.Wrap(err, "Error creating instance")
-			continue
-		}
-		instance.startTime = startTime
+		go func() {
+			instance, err := newInstance(c, w.TenantID, &wl, w.Volumes, name)
+			if err != nil {
+				e = errors.Wrap(err, "Error creating instance")
+				errCh <- e
+				return
+			}
+			instance.startTime = time.Now()
 
-		ok, err := instance.Allowed()
-		if err != nil {
-			instance.Clean()
-			e = errors.Wrap(err, "Error checking if instance allowed")
-			continue
-		}
-
-		if ok {
-			err = instance.Add()
+			ok, err := instance.Allowed()
 			if err != nil {
 				instance.Clean()
-				e = errors.Wrap(err, "Error adding instance")
-				continue
+				e = errors.Wrap(err, "Error checking if instance allowed")
+				errCh <- e
+				return
 			}
 
-			newInstances = append(newInstances, &instance.Instance)
-			if w.TraceLabel == "" {
-				go c.client.StartWorkload(instance.newConfig.config)
+			if ok {
+				err = instance.Add()
+				if err != nil {
+					instance.Clean()
+					e = errors.Wrap(err, "Error adding instance")
+
+				}
+
+				if w.TraceLabel == "" {
+					go c.client.StartWorkload(instance.newConfig.config)
+				} else {
+					go c.client.StartTracedWorkload(instance.newConfig.config, instance.startTime, w.TraceLabel)
+				}
+				instanceCh <- instance
 			} else {
-				go c.client.StartTracedWorkload(instance.newConfig.config, instance.startTime, w.TraceLabel)
+				instance.Clean()
+				// stop if we are over limits
+				e = errors.New("Over quota")
+				errCh <- e
 			}
-		} else {
-			instance.Clean()
-			// stop if we are over limits
-			e = errors.New("Over quota")
-			continue
+		}()
+	}
+
+	for i := 0; i < w.Instances; i++ {
+		select {
+		case tmpErr := <-errCh:
+			if err == nil {
+				err = tmpErr
+			}
+		case instance := <-instanceCh:
+			newInstances = append(newInstances, &instance.Instance)
 		}
 	}
 
-	return newInstances, e
+	return newInstances, err
 }
 
 func (c *controller) launchCNCI(tenantID string) error {
