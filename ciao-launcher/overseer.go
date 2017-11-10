@@ -172,6 +172,7 @@ type overseer struct {
 	statsInterval      time.Duration
 	di                 deviceInfo
 	maintenance        bool
+	nodeLabels         map[string]interface{}
 }
 
 type cnStats struct {
@@ -280,6 +281,7 @@ func (ovs *overseer) sendReadyStatusCommand(cns *cnStats) {
 	for i, nic := range nicInfo {
 		s.Networks[i] = *nic
 	}
+	s.NodeLabels = ovs.nodeLabels
 
 	payload, err := yaml.Marshal(&s)
 	if err != nil {
@@ -346,6 +348,7 @@ func (ovs *overseer) sendStats(cns *cnStats, status ssntp.Status) {
 		s.Instances[i].Volumes = state.volumes
 		i++
 	}
+	s.NodeLabels = ovs.nodeLabels
 
 	payload, err := yaml.Marshal(&s)
 	if err != nil {
@@ -665,6 +668,19 @@ DRAIN:
 	glog.Info("Overseer exitting")
 }
 
+func populateNodeLabels() map[string]interface{} {
+	labels := make(map[string]interface{})
+
+	hs, err := os.Hostname()
+	if err == nil {
+		labels["hostname"] = hs
+	}
+
+	// TODO: Consider what other labels we could use here: e.g. CPU details
+
+	return labels
+}
+
 func startOverseerFull(instancesDir string, wg *sync.WaitGroup, ac *agentClient,
 	statsInterval time.Duration, di deviceInfo) chan<- interface{} {
 
@@ -744,6 +760,7 @@ func startOverseerFull(instancesDir string, wg *sync.WaitGroup, ac *agentClient,
 		statsInterval:      statsInterval,
 		di:                 di,
 		maintenance:        maintenance,
+		nodeLabels:         populateNodeLabels(),
 	}
 	ovs.parentWg.Add(1)
 	glog.Info("Starting Overseer")

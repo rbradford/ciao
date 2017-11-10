@@ -1439,6 +1439,7 @@ func (ds *Datastore) addNodeStat(stat payloads.Stat) error {
 		StartFailures:        n.StartFailures,
 		AttachVolumeFailures: n.AttachVolumeFailures,
 		DeleteFailures:       n.DeleteFailures,
+		NodeLabels:           stat.NodeLabels,
 	}
 
 	ds.nodesLock.Unlock()

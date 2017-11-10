@@ -471,6 +471,7 @@ func newConfig(ctl *controller, wl *types.Workload, instanceID string, tenantID 
 		RequestedResources:  defaults,
 		Networking:          networking,
 		Storage:             storage,
+		NodeLabels:          wl.NodeLabels,
 	}
 
 	if wl.VMType == payloads.Docker {

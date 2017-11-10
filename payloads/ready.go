@@ -49,6 +49,9 @@ type Ready struct {
 	// CN/NN
 	Networks []NetworkStat
 
+	// Labels associated with this node
+	NodeLabels map[string]interface{} `yaml:"node_labels,omitempty"`
+
 	// Any changes to this struct should be accompanied by a change to
 	// the ciao-scheduler/scheduler.go:updateNodeStat() function
 }
@@ -62,4 +65,5 @@ func (s *Ready) Init() {
 	s.DiskAvailableMB = -1
 	s.Load = -1
 	s.CpusOnline = -1
+	s.NodeLabels = make(map[string]interface{})
 }

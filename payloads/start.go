@@ -242,6 +242,10 @@ type StartCmd struct {
 	// Restart is set to true if the payload represents a request to
 	// restart an existing instance on a new node.
 	Restart bool
+
+	// NodeLabels is the set of labels that the node must match in
+	// order to valid for this workload to be scheduled upon
+	NodeLabels map[string]interface{}
 }
 
 // Start represents the unmarshalled version of the contents of a SSNTP START

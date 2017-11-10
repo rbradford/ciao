@@ -89,6 +89,7 @@ type Workload struct {
 	Defaults    []payloads.RequestedResource `json:"defaults"`
 	Storage     []StorageResource            `json:"storage"`
 	Visibility  Visibility                   `json:"visibility"`
+	NodeLabels  map[string]interface{}       `json:"node_labels"`
 }
 
 // WorkloadResponse will be returned from /workloads apis
@@ -304,24 +305,25 @@ type StorageAttachment struct {
 // CiaoNode contains status and statistic information for an individual
 // node.
 type CiaoNode struct {
-	ID                    string    `json:"id"`
-	Hostname              string    `json:"hostname"`
-	Timestamp             time.Time `json:"updated"`
-	Status                string    `json:"status"`
-	MemTotal              int       `json:"ram_total"`
-	MemAvailable          int       `json:"ram_available"`
-	DiskTotal             int       `json:"disk_total"`
-	DiskAvailable         int       `json:"disk_available"`
-	Load                  int       `json:"load"`
-	OnlineCPUs            int       `json:"online_cpus"`
-	TotalInstances        int       `json:"total_instances"`
-	TotalRunningInstances int       `json:"total_running_instances"`
-	TotalPendingInstances int       `json:"total_pending_instances"`
-	TotalPausedInstances  int       `json:"total_paused_instances"`
-	TotalFailures         int       `json:"total_failures"`
-	StartFailures         int       `json:"start_failures"`
-	AttachVolumeFailures  int       `json:"attach_failures"`
-	DeleteFailures        int       `json:"delete_failures"`
+	ID                    string                 `json:"id"`
+	Hostname              string                 `json:"hostname"`
+	Timestamp             time.Time              `json:"updated"`
+	Status                string                 `json:"status"`
+	MemTotal              int                    `json:"ram_total"`
+	MemAvailable          int                    `json:"ram_available"`
+	DiskTotal             int                    `json:"disk_total"`
+	DiskAvailable         int                    `json:"disk_available"`
+	Load                  int                    `json:"load"`
+	OnlineCPUs            int                    `json:"online_cpus"`
+	TotalInstances        int                    `json:"total_instances"`
+	TotalRunningInstances int                    `json:"total_running_instances"`
+	TotalPendingInstances int                    `json:"total_pending_instances"`
+	TotalPausedInstances  int                    `json:"total_paused_instances"`
+	TotalFailures         int                    `json:"total_failures"`
+	StartFailures         int                    `json:"start_failures"`
+	AttachVolumeFailures  int                    `json:"attach_failures"`
+	DeleteFailures        int                    `json:"delete_failures"`
+	NodeLabels            map[string]interface{} `json:"node_labels"`
 }
 
 // NodeStatusType contains the valid values of a node's status

@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"runtime/pprof"
 	"sync"
 	"syscall"
@@ -98,6 +99,7 @@ type nodeStat struct {
 	cpus        int
 	isNetNode   bool
 	networks    []payloads.NetworkStat
+	nodeLabels  map[string]interface{}
 }
 
 type controllerStatus uint8
@@ -431,6 +433,7 @@ func (sched *ssntpSchedulerServer) updateNodeStat(node *nodeStat, status ssntp.S
 		node.load = stats.Load
 		node.cpus = stats.CpusOnline
 		node.networks = stats.Networks
+		node.nodeLabels = stats.NodeLabels
 
 		//any changes to the payloads.Ready struct should be
 		//accompanied by a change here
@@ -475,6 +478,7 @@ type workResources struct {
 	diskReqMB    int
 	networkNode  bool
 	physNets     []string
+	nodeLabels   map[string]interface{}
 }
 
 func (sched *ssntpSchedulerServer) getWorkloadResources(work *payloads.Start) (workload workResources, err error) {
@@ -532,6 +536,8 @@ func (sched *ssntpSchedulerServer) getWorkloadResources(work *payloads.Start) (w
 		return workload, fmt.Errorf("invalid start payload local disk demand: disk MB (%d) < 0, must be >= 0", workload.diskReqMB)
 	}
 
+	workload.nodeLabels = work.Start.NodeLabels
+
 	// note the uuid
 	workload.instanceUUID = work.Start.InstanceUUID
 
@@ -562,13 +568,33 @@ func networkDemandsSatisfied(node *nodeStat, workload *workResources) bool {
 	return true
 }
 
+func nodeLabelsMatch(node *nodeStat, workload *workResources) bool {
+	for wk, wv := range workload.nodeLabels {
+		nv, ok := node.nodeLabels[wk]
+		if !ok {
+			return false
+		}
+
+		if !reflect.TypeOf(wv).Comparable() {
+			return false
+		}
+
+		if nv != wv {
+			return false
+		}
+	}
+
+	return true
+}
+
 // Check resource demands are satisfiable by the referenced, locked nodeStat object
 func (sched *ssntpSchedulerServer) workloadFits(node *nodeStat, workload *workResources) bool {
 	// simple scheduling policy == first fit
 	if node.memAvailMB >= workload.memReqMB &&
 		node.diskAvailMB >= workload.diskReqMB &&
 		node.status == ssntp.READY &&
-		networkDemandsSatisfied(node, workload) {
+		networkDemandsSatisfied(node, workload) &&
+		nodeLabelsMatch(node, workload) {
 
 		return true
 	}

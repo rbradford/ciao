@@ -102,6 +102,9 @@ type Stat struct {
 	// Array containing statistics information for each instance hosted by
 	// the CN/NN
 	Instances []InstanceStat
+
+	// Labels associated with this node
+	NodeLabels map[string]interface{} `yaml:"node_labels,omitempty"`
 }
 
 const (
@@ -159,4 +162,5 @@ func (s *Stat) Init() {
 	s.DiskAvailableMB = -1
 	s.Load = -1
 	s.CpusOnline = -1
+	s.NodeLabels = make(map[string]interface{})
 }

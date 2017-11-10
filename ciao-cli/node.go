@@ -131,6 +131,10 @@ func dumpNode(node *types.CiaoNode) {
 	fmt.Printf("\t\tTotal Start Failures: %d\n", node.StartFailures)
 	fmt.Printf("\t\tTotal Delete Failures: %d\n", node.DeleteFailures)
 	fmt.Printf("\t\tTotal Attach Failures: %d\n", node.AttachVolumeFailures)
+
+	for k, v := range node.NodeLabels {
+		fmt.Printf("\t\tLabel: %s=%v\n", k, v)
+	}
 }
 
 func dumpNodes(headerText string, nodes types.CiaoNodes, t *template.Template) {
